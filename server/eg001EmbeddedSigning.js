@@ -23,11 +23,11 @@ eg001EmbeddedSigning.createController = async (req, res) => {
   // Step 1. Check the token
   // At this point we should have a good token. But we
   // double-check here to enable a better UX to the user.
-  let tokenOK = req.dsAuthJwt.checkToken(minimumBufferMin);
+  let tokenOK = req.dsAuth.checkToken(minimumBufferMin);
   if (!tokenOK) {
     // req.flash("info", "Sorry, you need to re-authenticate.");
     // Save the current operation so it will be resumed after authentication
-    req.dsAuthJwt.setEg(req, eg);
+    req.dsAuth.setEg(req, eg);
     res.redirect(mustAuthenticate);
   }
 
@@ -266,7 +266,7 @@ eg001EmbeddedSigning.getController = (req, res) => {
   // Check that the authentication token is ok with a long buffer time.
   // If needed, now is the best time to ask the user to authenticate
   // since they have not yet entered any information into the form.
-  let tokenOK = req.dsAuthJwt.checkToken();
+  let tokenOK = req.dsAuth.checkToken();
   if (tokenOK) {
     res.render("pages/examples/eg001EmbeddedSigning", {
       eg: eg,
@@ -279,7 +279,7 @@ eg001EmbeddedSigning.getController = (req, res) => {
     });
   } else {
     // Save the current operation so it will be resumed after authentication
-    req.dsAuthJwt.setEg(req, eg);
+    req.dsAuth.setEg(req, eg);
     res.redirect(mustAuthenticate);
   }
 };

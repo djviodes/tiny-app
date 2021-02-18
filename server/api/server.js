@@ -4,8 +4,11 @@ const MemoryStore = require("memorystore")(session);
 const helmet = require("helmet");
 const morgan = require("morgan");
 const cors = require("cors");
+const passport = require("passport");
+const DocusignStrategy = require("passport-docusign");
 
 const DsJwtAuth = require("../lib/DSJwtAuth");
+const DSAuthCodeGrant = require("../lib/DSAuthCodeGrant");
 const eg001 = require("../eg001EmbeddedSigning");
 const dsConfig = require("../config/index.js").config;
 
@@ -46,13 +49,67 @@ server.use("/auth", authRouter);
 server.use("/api/users", usersRouter);
 
 server.use((req, res, next) => {
+  req.dsAuthCodeGrant = new DSAuthCodeGrant(req);
   req.dsAuthJwt = new DsJwtAuth(req);
-  if (req.session.authMethod === "jwt-auth") {
-    req.dsAuth = req.dsAuthJwt;
-  }
+  req.dsAuth = req.dsAuthCodeGrant;
+  // if (req.session.authMethod === "jwt-auth") {
+  req.dsAuth = req.dsAuthJwt;
+  // }
   next();
 });
 
 server.post("/callDS", eg001.createController);
 
 module.exports = server;
+
+const SCOPES = ["signature"];
+const ROOM_SCOPES = [
+  "signature",
+  "dtr.rooms.read",
+  "dtr.rooms.write",
+  "dtr.documents.read",
+  "dtr.documents.write",
+  "dtr.profile.read",
+  "dtr.profile.write",
+  "dtr.company.read",
+  "dtr.company.write",
+  "room_forms",
+];
+const CLICK_SCOPES = ["signature", "click.manage", "click.send"];
+
+let scope;
+if (dsConfig.examplesApi.isRoomsApi) {
+  scope = ROOM_SCOPES;
+} else if (dsConfig.examplesApi.isClickApi) {
+  scope = CLICK_SCOPES;
+} else {
+  scope = SCOPES;
+}
+
+let hostUrl = "http://localhost:3000/";
+
+let docusignStrategy = new DocusignStrategy(
+  {
+    production: dsConfig.production,
+    clientID: dsConfig.dsClientId,
+    scope: scope.join(" "),
+    clientSecret: dsConfig.dsClientSecret,
+    callbackURL: hostUrl + "/ds/callback",
+    state: true, // automatic CSRF protection.
+    // See https://github.com/jaredhanson/passport-oauth2/blob/master/lib/state/session.js
+  },
+  function _processDsResult(accessToken, refreshToken, params, profile, done) {
+    // The params arg will be passed additional parameters of the grant.
+    // See https://github.com/jaredhanson/passport-oauth2/pull/84
+    //
+    // Here we're just assigning the tokens to the account object
+    // We store the data in DSAuthCodeGrant.getDefaultAccountInfo
+    let user = profile;
+    user.accessToken = accessToken;
+    user.refreshToken = refreshToken;
+    user.expiresIn = params.expires_in;
+    user.tokenExpirationTimestamp = moment().add(user.expiresIn, "s"); // The dateTime when the access token will expire
+    return done(null, user);
+  }
+);
+passport.use(docusignStrategy);
