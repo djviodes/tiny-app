@@ -8,7 +8,7 @@ const eg001EmbeddedSigning = exports,
   mustAuthenticate = "/ds/mustAuthenticate",
   minimumBufferMin = 3,
   signerClientId = 1000, // The id of the signer within this application.
-  demoDocsPath = path.resolve(__dirname, "demo_documents"),
+  // demoDocsPath = path.resolve(__dirname, "demo_documents"),
   pdf1File = "World_Wide_Corp_lorem.pdf",
   dsReturnUrl = dsConfig.appUrl + "/ds-return",
   dsPingUrl = dsConfig.appUrl + "/"; // Url that will be pinged by the DocuSign signing via Ajax
@@ -45,8 +45,8 @@ eg001EmbeddedSigning.createController = async (req, res) => {
     },
     args = {
       accessToken: req.body.accessToken,
-      basePath: req.session.basePath,
-      accountId: req.session.accountId,
+      basePath: req.body.basePath,
+      accountId: req.body.accountId,
       envelopeArgs: envelopeArgs,
     },
     results = null;
@@ -144,12 +144,12 @@ function makeEnvelope(args) {
   // read file from a local directory
   // The read could raise an exception if the file is not available!
   // ***************************** pdf1File will need to get replaced with our PDF document on line 12... we... think *****************************
-  docPdfBytes = fs.readFileSync(path.resolve(demoDocsPath, pdf1File));
+  docPdfBytes = fs.readFileSync(path.resolve("./demo_documents/", pdf1File));
 
   // create the envelope definition
   // ***************************** docusign.EnvelopeDefinition() allows us to create our 4 required parameters for our envelope... WE KNOW!!! *****************************
   let env = new docusign.EnvelopeDefinition();
-  env.emailSubject = "Please sign this document"; // ***************************** Make this "(signer's name) Family Promise Intake Forms" *****************************
+  env.emailSubject = "Test Documents"; // ***************************** Make this "(signer's name) Family Promise Intake Forms" *****************************
 
   // add the documents
   // ***************************** docusing.Document() allows us to create our Document object for our envelope *****************************
@@ -157,9 +157,9 @@ function makeEnvelope(args) {
     // ***************************** line of code below converts our pdf document to a base64 string to get stored in the envelope *****************************
     doc1b64 = Buffer.from(docPdfBytes).toString("base64");
   doc1.documentBase64 = doc1b64;
-  doc1.name = "Lorem Ipsum"; // can be different from actual file name
+  doc1.name = "Test"; // can be different from actual file name
   doc1.fileExtension = "pdf";
-  doc1.documentId = "3";
+  doc1.documentId = "1";
 
   // The order in the docs array determines the order in the envelope
   env.documents = [doc1];
