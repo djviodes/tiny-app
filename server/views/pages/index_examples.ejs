@@ -1,0 +1,7 @@
+<% if(locals.dsConfig.examplesApi.isRoomsApi) { %>
+    <% include index_rooms_examples %>
+<% } else if(locals.dsConfig.examplesApi.isClickApi) { %>
+    <% include index_click_examples %>
+<% } else { %>
+    <% include index_esignature_examples %>
+<% } %>
