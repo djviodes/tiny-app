@@ -15,7 +15,7 @@ let somethingFun = {
 
 function App() {
   function callBE() {
-    axios.post("http://localhost:8000/callDS", somethingFun);
+    axios.post("http://localhost:8000/callDS", somethingFun).then();
   }
   return (
     <div className="App">
