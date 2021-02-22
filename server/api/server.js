@@ -6,6 +6,7 @@ const morgan = require("morgan");
 const cors = require("cors");
 const passport = require("passport");
 const DocusignStrategy = require("passport-docusign");
+const flash = require("express-flash");
 
 const DsJwtAuth = require("../lib/DSJwtAuth");
 const DSAuthCodeGrant = require("../lib/DSAuthCodeGrant");
@@ -48,6 +49,10 @@ server.use(
 server.use("/auth", authRouter);
 server.use("/api/users", usersRouter);
 
+server.use(passport.initialize());
+server.use(passport.session());
+server.use(flash());
+
 server.use((req, res, next) => {
   req.dsAuthCodeGrant = new DSAuthCodeGrant(req);
   req.dsAuthJwt = new DsJwtAuth(req);
@@ -58,9 +63,17 @@ server.use((req, res, next) => {
   next();
 });
 
+server.get("/callDS", eg001.getController);
 server.post("/callDS", eg001.createController);
 
 module.exports = server;
+
+passport.serializeUser(function (user, done) {
+  done(null, user);
+});
+passport.deserializeUser(function (obj, done) {
+  done(null, obj);
+});
 
 const SCOPES = ["signature"];
 const ROOM_SCOPES = [
