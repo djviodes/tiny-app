@@ -63,8 +63,11 @@ eg001EmbeddedSigning.createController = async (req, res) => {
     //   errorCode: errorCode,
     //   errorMessage: errorMessage,
     // });
-    res.status(500).json({ error: error });
-    console.log("THIS IS THE ERROR: ", error);
+    res.status(error.status || 500).json({
+      message: error.message,
+      errorCode: errorCode,
+      errorMessage: errorMessage,
+    });
   }
   if (results) {
     // Redirect the user to the embedded signing
@@ -73,6 +76,7 @@ eg001EmbeddedSigning.createController = async (req, res) => {
     // query parameter on the returnUrl (see the makeRecipientViewRequest method)
     res.redirect(results.redirectUrl);
   }
+  console.log(body);
 };
 
 /**
@@ -96,7 +100,6 @@ eg001EmbeddedSigning.worker = async (args) => {
   // Step 1. Make the envelope request body
   // ***************************** Fills in envelope template *****************************
   let envelope = makeEnvelope(args.envelopeArgs);
-  // console.log("This is the envelope: ", envelope);
 
   // Step 2. call Envelopes::create API method
   // Exceptions will be caught by the calling function
@@ -104,7 +107,6 @@ eg001EmbeddedSigning.worker = async (args) => {
   results = await envelopesApi.createEnvelope(args.accountId, {
     envelopeDefinition: envelope,
   });
-  // console.log("These are the results ", results);
 
   let envelopeId = results.envelopeId;
   console.log(`Envelope was created. EnvelopeId ${envelopeId}`);
@@ -178,7 +180,6 @@ function makeEnvelope(args) {
     // ***************************** Need to do more research into recipientId... DocuSign courses say its required but Alice found an example without it *****************************
     recipientId: 1,
   });
-  // console.log("This is the signer1: ", signer1);
 
   // Create signHere fields (also known as tabs) on the documents,
   // We're using anchor (autoPlace) positioning
@@ -192,20 +193,17 @@ function makeEnvelope(args) {
     anchorUnits: "pixels",
     anchorXOffset: "20",
   });
-  // console.log("signHere1: ", signHere1);
   // Tabs are set per recipient / signer
   // ***************************** If there are two heads of the family signing then we would also need to make a signer2Tabs... we think *****************************
   let signer1Tabs = docusign.Tabs.constructFromObject({
     signHereTabs: [signHere1],
   });
   signer1.tabs = signer1Tabs;
-  // console.log("signer1.tabs: ", signer1.tabs);
   // Add the recipient to the envelope object
   // ***************************** Signer is a type of recipient. recipient is a required parameter for an envelope, so below is where we add all of our signers to the recipients object *****************************
   let recipients = docusign.Recipients.constructFromObject({
     signers: [signer1],
   });
-  // console.log("These are the recipients: ", recipients);
   env.recipients = recipients;
 
   // Request that the envelope be sent by setting |status| to "sent".
@@ -267,7 +265,6 @@ function makeRecipientViewRequest(args) {
  */
 // ***************************** We are not totally sure what this function is for... we may not need it... *****************************
 eg001EmbeddedSigning.getController = (req, res) => {
-  console.log("Get Controller ", req);
   // Check that the authentication token is ok with a long buffer time.
   // If needed, now is the best time to ask the user to authenticate
   // since they have not yet entered any information into the form.

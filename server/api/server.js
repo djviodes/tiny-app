@@ -29,8 +29,14 @@ server.get("/", (req, res) => {
   });
 });
 
+const corsOptions = {
+  origin: "*",
+  credentials: true,
+  optionSuccessStatus: 200,
+};
+
 server.use(express.json());
-server.use(cors());
+server.use(cors(corsOptions));
 server.use(helmet());
 server.use(morgan("dev"));
 server.use(

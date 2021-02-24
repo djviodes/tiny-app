@@ -10,6 +10,9 @@
 
 "use strict";
 let DsJwtAuth = function _DsJwtAuth(req) {
+  console.log(
+    "******** This is JWTAuth req.basePath: " + req.basePath + " ********"
+  );
   // private globals
   this._debug_prefix = "DsJwtAuth";
   this.accessToken = req.body && req.body.accessToken;
