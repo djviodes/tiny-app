@@ -10,9 +10,6 @@
 
 "use strict";
 let DsJwtAuth = function _DsJwtAuth(req) {
-  console.log(
-    "******** This is JWTAuth req.basePath: " + req.basePath + " ********"
-  );
   // private globals
   this._debug_prefix = "DsJwtAuth";
   this.accessToken = req.body && req.body.accessToken;
@@ -21,10 +18,10 @@ let DsJwtAuth = function _DsJwtAuth(req) {
   this.accountName = req.body && req.body.accountName;
   this.basePath = req.body && req.body.basePath;
   this._tokenExpiration = req.body && req.body.tokenExpirationTimestamp;
-  console.log(
-    "Our token expiration timestamp... please ",
-    this._tokenExpiration
-  );
+  // console.log(
+  //   "Our token expiration timestamp... please ",
+  //   this._tokenExpiration
+  // );
   this.scopes = "signature";
   if (dsConfig.examplesApi.isRoomsApi) {
     this.scopes +=

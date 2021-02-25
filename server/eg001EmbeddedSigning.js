@@ -9,7 +9,7 @@ const eg001EmbeddedSigning = exports,
   minimumBufferMin = 3,
   signerClientId = 1000, // The id of the signer within this application.
   // demoDocsPath = path.resolve(__dirname, "demo_documents"),
-  pdf1File = "World_Wide_Corp_lorem.pdf",
+  pdf1File = "practice-fpintake.pdf",
   dsReturnUrl = dsConfig.appUrl + "/ds-return",
   dsPingUrl = dsConfig.appUrl + "/"; // Url that will be pinged by the DocuSign signing via Ajax
 /**
@@ -47,6 +47,10 @@ eg001EmbeddedSigning.createController = async (req, res) => {
       basePath: req.body.basePath,
       accountId: req.body.accountId,
       envelopeArgs: envelopeArgs,
+      signerEmail: "djviodes26@gmail.com",
+      signerName: "David Viodes",
+      templateId: "4941e327-b539-467e-971c-9924a2ffb227",
+      brandId: "37dd6dd4-9b01-4902-81ee-0da2d3c62685",
     },
     results = null;
   try {
@@ -76,7 +80,7 @@ eg001EmbeddedSigning.createController = async (req, res) => {
     // query parameter on the returnUrl (see the makeRecipientViewRequest method)
     res.redirect(results.redirectUrl);
   }
-  console.log(body);
+  // console.log(body);
 };
 
 /**
@@ -90,7 +94,7 @@ eg001EmbeddedSigning.worker = async (args) => {
   // args.basePath
   // args.accessToken
   // args.accountId
-
+  console.log("These are our ARGS: ", args);
   let dsApiClient = new docusign.ApiClient();
   dsApiClient.setBasePath(args.basePath);
   dsApiClient.addDefaultHeader("Authorization", "Bearer " + args.accessToken);
@@ -99,17 +103,27 @@ eg001EmbeddedSigning.worker = async (args) => {
 
   // Step 1. Make the envelope request body
   // ***************************** Fills in envelope template *****************************
-  let envelope = makeEnvelope(args.envelopeArgs);
-
+  // let envelope = makeEnvelope(args.envelopeArgs);
+  // console.log("This is the ENVELOPE: ", envelope);
   // Step 2. call Envelopes::create API method
   // Exceptions will be caught by the calling function
   // ***************************** createEnvelope is a "model" in the envelopes API that creates a new envelope... we think *****************************
-  results = await envelopesApi.createEnvelope(args.accountId, {
-    envelopeDefinition: envelope,
-  });
+  let envelopeDef = {
+    envelopeDefinition: {
+      signerEmail: args.signerEmail,
+      signerName: args.signerName,
+      basePath: args.basePath,
+      accountId: args.accountId,
+      templateId: args.templateId,
+      brandId: args.brandId,
+      status: "sent",
+    },
+  };
+  results = await envelopesApi.createEnvelope(args.accountId, envelopeDef);
+  // console.log("This is our ENVELOPE DEFINITION: ", envelopeDef);
 
   let envelopeId = results.envelopeId;
-  console.log(`Envelope was created. EnvelopeId ${envelopeId}`);
+  // console.log(`Envelope was created. EnvelopeId ${envelopeId}`);
 
   // Step 3. create the recipient view, the embedded signing
   // ***************************** We think this is what brings the PDF to the signer view *****************************
@@ -119,6 +133,7 @@ eg001EmbeddedSigning.worker = async (args) => {
   results = await envelopesApi.createRecipientView(args.accountId, envelopeId, {
     recipientViewRequest: viewRequest,
   });
+  // console.log("These are our results: ", results);
 
   return { envelopeId: envelopeId, redirectUrl: results.url };
 };
@@ -153,13 +168,14 @@ function makeEnvelope(args) {
   // create the envelope definition
   // ***************************** docusign.EnvelopeDefinition() allows us to create our 4 required parameters for our envelope... WE KNOW!!! *****************************
   let env = new docusign.EnvelopeDefinition();
-  env.emailSubject = "Test Documents"; // ***************************** Make this "(signer's name) Family Promise Intake Forms" *****************************
+  // env.emailSubject = "Test Documents"; // ***************************** Make this "(signer's name) Family Promise Intake Forms" *****************************
 
   // add the documents
   // ***************************** docusing.Document() allows us to create our Document object for our envelope *****************************
   let doc1 = new docusign.Document(),
     // ***************************** line of code below converts our pdf document to a base64 string to get stored in the envelope *****************************
     doc1b64 = Buffer.from(docPdfBytes).toString("base64");
+  // doc1b64 = "Random String";
   doc1.documentBase64 = doc1b64;
   doc1.name = "Test"; // can be different from actual file name
   doc1.fileExtension = "pdf";
