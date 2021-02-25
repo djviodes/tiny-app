@@ -47,15 +47,17 @@ eg001EmbeddedSigning.createController = async (req, res) => {
       basePath: req.body.basePath,
       accountId: req.body.accountId,
       envelopeArgs: envelopeArgs,
-      signerEmail: "djviodes26@gmail.com",
-      signerName: "David Viodes",
+      signerEmail: signerEmail,
+      signerName: signerName,
       templateId: "4941e327-b539-467e-971c-9924a2ffb227",
       brandId: "37dd6dd4-9b01-4902-81ee-0da2d3c62685",
+      signerClientId: signerClientId,
     },
     results = null;
   try {
     results = await eg001EmbeddedSigning.worker(args);
   } catch (error) {
+    console.log("This is the ERROR MESSAGE: ", error.message);
     let errorBody = error && error.response && error.response.body,
       // we can pull the DocuSign error code and message from the response body
       errorCode = errorBody && errorBody.errorCode,
@@ -94,7 +96,7 @@ eg001EmbeddedSigning.worker = async (args) => {
   // args.basePath
   // args.accessToken
   // args.accountId
-  console.log("These are our ARGS: ", args);
+  // console.log("These are our ARGS: ", args);
   let dsApiClient = new docusign.ApiClient();
   dsApiClient.setBasePath(args.basePath);
   dsApiClient.addDefaultHeader("Authorization", "Bearer " + args.accessToken);
@@ -103,7 +105,7 @@ eg001EmbeddedSigning.worker = async (args) => {
 
   // Step 1. Make the envelope request body
   // ***************************** Fills in envelope template *****************************
-  // let envelope = makeEnvelope(args.envelopeArgs);
+  let envelope = makeEnvelope(args.envelopeArgs);
   // console.log("This is the ENVELOPE: ", envelope);
   // Step 2. call Envelopes::create API method
   // Exceptions will be caught by the calling function
@@ -117,23 +119,27 @@ eg001EmbeddedSigning.worker = async (args) => {
       templateId: args.templateId,
       brandId: args.brandId,
       status: "sent",
+      signerClientId: args.signerClientId,
     },
   };
   results = await envelopesApi.createEnvelope(args.accountId, envelopeDef);
+  // console.log("These are the RESULTS: ", results);
   // console.log("This is our ENVELOPE DEFINITION: ", envelopeDef);
 
   let envelopeId = results.envelopeId;
+  // console.log("This is our ENVELOPE ID: ", envelopeId);
   // console.log(`Envelope was created. EnvelopeId ${envelopeId}`);
 
   // Step 3. create the recipient view, the embedded signing
   // ***************************** We think this is what brings the PDF to the signer view *****************************
   let viewRequest = makeRecipientViewRequest(args.envelopeArgs);
+  console.log("This is the VIEW REQUEST: ", viewRequest);
   // Call the CreateRecipientView API
   // Exceptions will be caught by the calling function
   results = await envelopesApi.createRecipientView(args.accountId, envelopeId, {
     recipientViewRequest: viewRequest,
   });
-  // console.log("These are our results: ", results);
+  console.log("These are our results: ", results);
 
   return { envelopeId: envelopeId, redirectUrl: results.url };
 };

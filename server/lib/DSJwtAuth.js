@@ -223,7 +223,7 @@ DsJwtAuth.prototype.login = function (req, res, next) {
       });
     })
     .catch((e) => {
-      console.log(e);
+      // console.log(e);
       let body = e.response && e.response.body;
       if (body) {
         // DocuSign API problem
@@ -290,5 +290,5 @@ DsJwtAuth.prototype._debug_log = function (m) {
   if (!this._debug) {
     return;
   }
-  console.log(this._debug_prefix + ": " + m);
+  // console.log(this._debug_prefix + ": " + m);
 };
