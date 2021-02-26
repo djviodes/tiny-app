@@ -7,7 +7,7 @@ const eg001EmbeddedSigning = exports,
   eg = "eg001", // This example reference.
   mustAuthenticate = "/ds/mustAuthenticate",
   minimumBufferMin = 3,
-  signerClientId = 1000, // The id of the signer within this application.
+  signerClientId = "37df89af-170f-4a01-ae21-e68f63de3ea6", // The id of the signer within this application.
   // demoDocsPath = path.resolve(__dirname, "demo_documents"),
   pdf1File = "practice-fpintake.pdf",
   dsReturnUrl = dsConfig.appUrl + "/ds-return",
@@ -33,12 +33,21 @@ eg001EmbeddedSigning.createController = async (req, res) => {
   // Step 2. Call the worker method
   let body = req.body,
     // Additional data validation might also be appropriate
-    signerEmail = validator.escape(body.signerEmail),
-    signerName = validator.escape(body.signerName),
+    signer1Email = validator.escape(body.signer1Email),
+    signer1Name = validator.escape(body.signer1Name),
+    // signer2Email = validator.escape(body.signer2Email),
+    // signer2Name = validator.escape(body.signer2Name),
+    // staffEmail = validator.escape(body.staffEmail),
+    // staffName = validator.escape(body.staffName),
     envelopeArgs = {
-      signerEmail: signerEmail,
-      signerName: signerName,
-      signerClientId: signerClientId,
+      templateId: "4941e327-b539-467e-971c-9924a2ffb227",
+      signer1Email: signer1Email,
+      signer1Name: signer1Name,
+      // signer2Email: signer2Email,
+      // signer2Name: signer2Name,
+      // staffEmail: staffEmail,
+      // staffName: staffName,
+      clientUserId: signerClientId,
       dsReturnUrl: dsReturnUrl,
       dsPingUrl: dsPingUrl,
     },
@@ -47,17 +56,17 @@ eg001EmbeddedSigning.createController = async (req, res) => {
       basePath: req.body.basePath,
       accountId: req.body.accountId,
       envelopeArgs: envelopeArgs,
-      signerEmail: signerEmail,
-      signerName: signerName,
-      templateId: "4941e327-b539-467e-971c-9924a2ffb227",
       brandId: "37dd6dd4-9b01-4902-81ee-0da2d3c62685",
-      signerClientId: signerClientId,
+      // signerEmail: signerEmail,
+      // signerName: signerName,
+      // templateId: "4941e327-b539-467e-971c-9924a2ffb227",
+      // signerClientId: signerClientId,
     },
     results = null;
   try {
     results = await eg001EmbeddedSigning.worker(args);
   } catch (error) {
-    console.log("This is the ERROR MESSAGE: ", error.message);
+    console.log("This is the ERROR MESSAGE: ", error);
     let errorBody = error && error.response && error.response.body,
       // we can pull the DocuSign error code and message from the response body
       errorCode = errorBody && errorBody.errorCode,
@@ -110,19 +119,21 @@ eg001EmbeddedSigning.worker = async (args) => {
   // Step 2. call Envelopes::create API method
   // Exceptions will be caught by the calling function
   // ***************************** createEnvelope is a "model" in the envelopes API that creates a new envelope... we think *****************************
-  let envelopeDef = {
-    envelopeDefinition: {
-      signerEmail: args.signerEmail,
-      signerName: args.signerName,
-      basePath: args.basePath,
-      accountId: args.accountId,
-      templateId: args.templateId,
-      brandId: args.brandId,
-      status: "sent",
-      signerClientId: args.signerClientId,
-    },
-  };
-  results = await envelopesApi.createEnvelope(args.accountId, envelopeDef);
+  // let envelopeDef = {
+  //   envelopeDefinition: {
+  //     signerEmail: args.signerEmail,
+  //     signerName: args.signerName,
+  //     basePath: args.basePath,
+  //     accountId: args.accountId,
+  //     templateId: args.templateId,
+  //     brandId: args.brandId,
+  //     status: "sent",
+  //     signerClientId: args.signerClientId,
+  //   },
+  // };
+  results = await envelopesApi.createEnvelope(args.accountId, {
+    envelopeDefinition: envelope,
+  });
   // console.log("These are the RESULTS: ", results);
   // console.log("This is our ENVELOPE DEFINITION: ", envelopeDef);
 
@@ -133,13 +144,13 @@ eg001EmbeddedSigning.worker = async (args) => {
   // Step 3. create the recipient view, the embedded signing
   // ***************************** We think this is what brings the PDF to the signer view *****************************
   let viewRequest = makeRecipientViewRequest(args.envelopeArgs);
-  console.log("This is the VIEW REQUEST: ", viewRequest);
+  // console.log("This is the VIEW REQUEST: ", viewRequest);
   // Call the CreateRecipientView API
   // Exceptions will be caught by the calling function
   results = await envelopesApi.createRecipientView(args.accountId, envelopeId, {
     recipientViewRequest: viewRequest,
   });
-  console.log("These are our results: ", results);
+  console.log("These are our RESULTS: ", results);
 
   return { envelopeId: envelopeId, redirectUrl: results.url };
 };
@@ -152,6 +163,7 @@ eg001EmbeddedSigning.worker = async (args) => {
  * @private
  */
 // ***************************** Creates envelope template *****************************
+/*
 function makeEnvelope(args) {
   // Data for this method
   // args.signerEmail
@@ -235,6 +247,52 @@ function makeEnvelope(args) {
 
   return env;
 }
+*/
+function makeEnvelope(args) {
+  // Data for this method
+  // args.signerEmail
+  // args.signerName
+  // args.ccEmail
+  // args.ccName
+  // args.templateId
+
+  // The envelope has two recipients.
+  // recipient 1 - signer
+  // recipient 2 - cc
+
+  // create the envelope definition
+  let env = new docusign.EnvelopeDefinition();
+  env.templateId = args.templateId;
+
+  // Create template role elements to connect the signer and cc recipients
+  // to the template
+  // We're setting the parameters via the object creation
+  let signer1 = docusign.TemplateRole.constructFromObject({
+    clientUserId: signerClientId,
+    recipientId: signerClientId,
+    email: args.signer1Email,
+    name: args.signer1Name,
+    roleName: "Signer 1",
+  });
+
+  // let signer2 = docusign.TemplateRole.constructFromObject({
+  //   email: args.signer2Email,
+  //   name: args.signer2Name,
+  //   roleName: "Signer 2",
+  // });
+
+  // let staff = docusign.TemplateRole.constructFromObject({
+  //   email: args.staffEmail,
+  //   name: args.staffName,
+  //   roleName: "Staff",
+  // });
+
+  // Add the TemplateRole objects to the envelope object
+  env.templateRoles = [signer1];
+  env.status = "sent"; // We want the envelope to be sent
+
+  return env;
+}
 
 function makeRecipientViewRequest(args) {
   // Data for this method
@@ -263,9 +321,9 @@ function makeRecipientViewRequest(args) {
 
   // Recipient information must match embedded recipient info
   // we used to create the envelope.
-  viewRequest.email = args.signerEmail; // ***************************** email for FP account *****************************
-  viewRequest.userName = args.signerName; // ***************************** name when signing up for FP account *****************************
-  viewRequest.clientUserId = args.signerClientId; // ***************************** FP account ID *****************************
+  viewRequest.email = "djviodes@ymail.com"; // ***************************** email for FP account *****************************
+  viewRequest.userName = "David Viodes"; // ***************************** name when signing up for FP account *****************************
+  viewRequest.clientUserId = signerClientId; // ***************************** FP account ID *****************************
 
   // DocuSign recommends that you redirect to DocuSign for the
   // embedded signing. There are multiple ways to save state.
@@ -277,7 +335,7 @@ function makeRecipientViewRequest(args) {
   viewRequest.pingFrequency = 600; // seconds
   // ***************************** NOTE: The pings will only be sent if the pingUrl is an https address *****************************
   viewRequest.pingUrl = args.dsPingUrl; // optional setting
-
+  // console.log("This is the VIEW REQUEST: ", viewRequest);
   return viewRequest;
 }
 // ***DS.snippet.0.end
