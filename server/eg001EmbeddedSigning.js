@@ -7,9 +7,7 @@ const eg001EmbeddedSigning = exports,
   eg = "eg001", // This example reference.
   mustAuthenticate = "/ds/mustAuthenticate",
   minimumBufferMin = 3,
-  signerClientId = "37df89af-170f-4a01-ae21-e68f63de3ea6", // The id of the signer within this application.
-  // demoDocsPath = path.resolve(__dirname, "demo_documents"),
-  pdf1File = "practice-fpintake.pdf",
+  signerClientId = 1, // ***************************** The id of the signer within this application. Replace with Okta ID later (It can be whatever we want it to be) *****************************
   dsReturnUrl = dsConfig.appUrl + "/ds-return",
   dsPingUrl = dsConfig.appUrl + "/"; // Url that will be pinged by the DocuSign signing via Ajax
 /**
@@ -66,22 +64,11 @@ eg001EmbeddedSigning.createController = async (req, res) => {
   try {
     results = await eg001EmbeddedSigning.worker(args);
   } catch (error) {
-    console.log("This is the ERROR MESSAGE: ", error);
-    let errorBody = error && error.response && error.response.body,
-      // we can pull the DocuSign error code and message from the response body
-      errorCode = errorBody && errorBody.errorCode,
-      errorMessage = errorBody && errorBody.message;
-    // In production, may want to provide customized error messages and
-    // remediation advice to the user.
-    // res.render("pages/error", {
-    //   err: error,
-    //   errorCode: errorCode,
-    //   errorMessage: errorMessage,
-    // });
+    let errorBody = error.response.body;
+    console.log("This is the ERROR MESSAGE: ", errorBody);
     res.status(error.status || 500).json({
       message: error.message,
-      errorCode: errorCode,
-      errorMessage: errorMessage,
+      errorBody: errorBody,
     });
   }
   if (results) {
@@ -91,7 +78,6 @@ eg001EmbeddedSigning.createController = async (req, res) => {
     // query parameter on the returnUrl (see the makeRecipientViewRequest method)
     res.redirect(results.redirectUrl);
   }
-  // console.log(body);
 };
 
 /**
@@ -105,7 +91,6 @@ eg001EmbeddedSigning.worker = async (args) => {
   // args.basePath
   // args.accessToken
   // args.accountId
-  // console.log("These are our ARGS: ", args);
   let dsApiClient = new docusign.ApiClient();
   dsApiClient.setBasePath(args.basePath);
   dsApiClient.addDefaultHeader("Authorization", "Bearer " + args.accessToken);
@@ -115,36 +100,20 @@ eg001EmbeddedSigning.worker = async (args) => {
   // Step 1. Make the envelope request body
   // ***************************** Fills in envelope template *****************************
   let envelope = makeEnvelope(args.envelopeArgs);
-  // console.log("This is the ENVELOPE: ", envelope);
+
   // Step 2. call Envelopes::create API method
   // Exceptions will be caught by the calling function
-  // ***************************** createEnvelope is a "model" in the envelopes API that creates a new envelope... we think *****************************
-  // let envelopeDef = {
-  //   envelopeDefinition: {
-  //     signerEmail: args.signerEmail,
-  //     signerName: args.signerName,
-  //     basePath: args.basePath,
-  //     accountId: args.accountId,
-  //     templateId: args.templateId,
-  //     brandId: args.brandId,
-  //     status: "sent",
-  //     signerClientId: args.signerClientId,
-  //   },
-  // };
+  // ***************************** createEnvelope is a "model" in the envelopes API that creates a new envelope *****************************
   results = await envelopesApi.createEnvelope(args.accountId, {
     envelopeDefinition: envelope,
   });
-  // console.log("These are the RESULTS: ", results);
-  // console.log("This is our ENVELOPE DEFINITION: ", envelopeDef);
 
   let envelopeId = results.envelopeId;
-  // console.log("This is our ENVELOPE ID: ", envelopeId);
-  // console.log(`Envelope was created. EnvelopeId ${envelopeId}`);
+  console.log(`Envelope was created. EnvelopeId ${envelopeId}`);
 
   // Step 3. create the recipient view, the embedded signing
-  // ***************************** We think this is what brings the PDF to the signer view *****************************
+  // ***************************** This is what brings the template to the signer view *****************************
   let viewRequest = makeRecipientViewRequest(args.envelopeArgs);
-  // console.log("This is the VIEW REQUEST: ", viewRequest);
   // Call the CreateRecipientView API
   // Exceptions will be caught by the calling function
   results = await envelopesApi.createRecipientView(args.accountId, envelopeId, {
@@ -162,7 +131,7 @@ eg001EmbeddedSigning.worker = async (args) => {
  * @returns {Envelope} An envelope definition
  * @private
  */
-// ***************************** Creates envelope template *****************************
+// ***************************** Fills envelope template with signer information *****************************
 /*
 function makeEnvelope(args) {
   // Data for this method
@@ -256,10 +225,6 @@ function makeEnvelope(args) {
   // args.ccName
   // args.templateId
 
-  // The envelope has two recipients.
-  // recipient 1 - signer
-  // recipient 2 - cc
-
   // create the envelope definition
   let env = new docusign.EnvelopeDefinition();
   env.templateId = args.templateId;
@@ -269,7 +234,6 @@ function makeEnvelope(args) {
   // We're setting the parameters via the object creation
   let signer1 = docusign.TemplateRole.constructFromObject({
     clientUserId: signerClientId,
-    recipientId: signerClientId,
     email: args.signer1Email,
     name: args.signer1Name,
     roleName: "Signer 1",
@@ -289,7 +253,7 @@ function makeEnvelope(args) {
 
   // Add the TemplateRole objects to the envelope object
   env.templateRoles = [signer1];
-  env.status = "sent"; // We want the envelope to be sent
+  env.status = "sent"; // ***************************** We want the envelope status to be set to "sent" *****************************
 
   return env;
 }
@@ -304,26 +268,23 @@ function makeRecipientViewRequest(args) {
 
   let viewRequest = new docusign.RecipientViewRequest();
 
-  // ***************************** Set the url where you want the recipient to go once they are done signing *****************************
-  // ***************************** should typically be a callback route somewhere in your app. *****************************
   // The query parameter is included as an example of how
   // to save/recover state information during the redirect to
   // the DocuSign signing. It's usually better to use
   // the session mechanism of your web framework. Query parameters
   // can be changed/spoofed very easily.
-  viewRequest.returnUrl = args.dsReturnUrl + "?state=123";
+  viewRequest.returnUrl = args.dsReturnUrl + "?state=123"; // ***************************** Set the url where you want the recipient to go once they are done signing *****************************
 
   // How has your app authenticated the user? In addition to your app's
   // authentication, you can include authenticate steps from DocuSign.
   // Eg, SMS authentication
-  // ***************************** This needs to be clarified with J. I will find all the different methods later. They're in a video I'll rewatch. *****************************
   viewRequest.authenticationMethod = "none";
 
   // Recipient information must match embedded recipient info
   // we used to create the envelope.
-  viewRequest.email = "djviodes@ymail.com"; // ***************************** email for FP account *****************************
-  viewRequest.userName = "David Viodes"; // ***************************** name when signing up for FP account *****************************
-  viewRequest.clientUserId = signerClientId; // ***************************** FP account ID *****************************
+  viewRequest.email = "djviodes@ymail.com"; // ***************************** email for signer *****************************
+  viewRequest.userName = "David Viodes"; // ***************************** name when signing up for signer *****************************
+  viewRequest.clientUserId = signerClientId; // ***************************** signer ID *****************************
 
   // DocuSign recommends that you redirect to DocuSign for the
   // embedded signing. There are multiple ways to save state.
@@ -331,37 +292,9 @@ function makeRecipientViewRequest(args) {
   // parameter. It causes the DocuSign signing web page
   // (not the DocuSign server) to send pings via AJAX to your
   // app,
-  // ***************************** Will send a ping to FP website so Okta does not sign us out for inactivity... we think *****************************
+  // ***************************** Will send a ping to FP website so Okta does not sign us out for inactivity *****************************
   viewRequest.pingFrequency = 600; // seconds
   // ***************************** NOTE: The pings will only be sent if the pingUrl is an https address *****************************
   viewRequest.pingUrl = args.dsPingUrl; // optional setting
-  // console.log("This is the VIEW REQUEST: ", viewRequest);
   return viewRequest;
 }
-// ***DS.snippet.0.end
-
-/**
- * Form page for this application
- */
-// ***************************** We are not totally sure what this function is for... we may not need it... *****************************
-eg001EmbeddedSigning.getController = (req, res) => {
-  // Check that the authentication token is ok with a long buffer time.
-  // If needed, now is the best time to ask the user to authenticate
-  // since they have not yet entered any information into the form.
-  let tokenOK = req.dsAuth.checkToken();
-  if (tokenOK) {
-    res.render("pages/examples/eg001EmbeddedSigning", {
-      eg: eg,
-      csrfToken: req.csrfToken(),
-      title: "Use embedded signing",
-      sourceFile: path.basename(__filename),
-      sourceUrl: dsConfig.githubExampleUrl + path.basename(__filename),
-      documentation: dsConfig.documentation + eg,
-      showDoc: dsConfig.documentation,
-    });
-  } else {
-    // Save the current operation so it will be resumed after authentication
-    req.dsAuth.setEg(req, eg);
-    res.redirect(mustAuthenticate);
-  }
-};

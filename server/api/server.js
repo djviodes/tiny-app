@@ -69,7 +69,6 @@ server.use((req, res, next) => {
   next();
 });
 
-server.get("/callDS", eg001.getController);
 server.post("/callDS", eg001.createController);
 
 module.exports = server;
