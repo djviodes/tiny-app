@@ -13,15 +13,10 @@ let DsJwtAuth = function _DsJwtAuth(req) {
   // private globals
   this._debug_prefix = "DsJwtAuth";
   this.accessToken = req.body && req.body.accessToken;
-  // console.log("Our access token... please ", this.accessToken);
   this.accountId = req.body && req.body.accountId;
   this.accountName = req.body && req.body.accountName;
   this.basePath = req.body && req.body.basePath;
   this._tokenExpiration = req.body && req.body.tokenExpirationTimestamp;
-  // console.log(
-  //   "Our token expiration timestamp... please ",
-  //   this._tokenExpiration
-  // );
   this.scopes = "signature";
   if (dsConfig.examplesApi.isRoomsApi) {
     this.scopes +=
@@ -96,8 +91,8 @@ DsJwtAuth.prototype.getToken = async function _getToken() {
   // dsConfig.privateKey
   // dsConfig.dsOauthServer
 
-  const jwtLifeSec = 10 * 60, // requested lifetime for the JWT is 10 min
-    dsApi = new docusign.ApiClient();
+  const jwtLifeSec = 10 * 60; // requested lifetime for the JWT is 10 min
+  const dsApi = new docusign.ApiClient();
   dsApi.setOAuthBasePath(dsConfig.dsOauthServer.replace("https://", "")); // it should be domain only.
   const results = await dsApi.requestJWTUserToken(
     dsConfig.dsClientId,

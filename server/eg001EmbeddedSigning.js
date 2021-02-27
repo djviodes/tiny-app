@@ -17,14 +17,15 @@ const eg001EmbeddedSigning = exports,
  */
 // ***************************** Double checks token and validator is the same as yup validation we think *****************************
 eg001EmbeddedSigning.createController = async (req, res) => {
+  await req.dsAuthJwt.getToken();
   // Step 1. Check the token
   // At this point we should have a good token. But we
   // double-check here to enable a better UX to the user.
-  let tokenOK = req.dsAuth.checkToken(minimumBufferMin);
+  let tokenOK = req.dsAuthJwt.checkToken(minimumBufferMin);
   if (!tokenOK) {
     // req.flash("info", "Sorry, you need to re-authenticate.");
     // Save the current operation so it will be resumed after authentication
-    req.dsAuth.setEg(req, eg);
+    req.dsAuthJwt.setEg(req, eg);
     res.redirect(mustAuthenticate);
   }
 
@@ -50,7 +51,7 @@ eg001EmbeddedSigning.createController = async (req, res) => {
       dsPingUrl: dsPingUrl,
     },
     args = {
-      accessToken: req.body.accessToken,
+      accessToken: req.dsAuthJwt.accessToken,
       basePath: req.body.basePath,
       accountId: req.body.accountId,
       envelopeArgs: envelopeArgs,
@@ -72,6 +73,7 @@ eg001EmbeddedSigning.createController = async (req, res) => {
     });
   }
   if (results) {
+    console.log("These are results: ", results);
     // Redirect the user to the embedded signing
     // Don't use an iFrame!
     // State can be stored/recovered using the framework's session or a

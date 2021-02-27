@@ -9,7 +9,6 @@ const DocusignStrategy = require("passport-docusign");
 const flash = require("express-flash");
 
 const DsJwtAuth = require("../lib/DSJwtAuth");
-const DSAuthCodeGrant = require("../lib/DSAuthCodeGrant");
 const eg001 = require("../eg001EmbeddedSigning");
 const dsConfig = require("../config/index.js").config;
 
@@ -29,14 +28,8 @@ server.get("/", (req, res) => {
   });
 });
 
-const corsOptions = {
-  origin: "*",
-  credentials: true,
-  optionSuccessStatus: 200,
-};
-
 server.use(express.json());
-server.use(cors(corsOptions));
+server.use(cors());
 server.use(helmet());
 server.use(morgan("dev"));
 server.use(
@@ -60,12 +53,7 @@ server.use(passport.session());
 server.use(flash());
 
 server.use((req, res, next) => {
-  req.dsAuthCodeGrant = new DSAuthCodeGrant(req);
   req.dsAuthJwt = new DsJwtAuth(req);
-  req.dsAuth = req.dsAuthCodeGrant;
-  // if (req.session.authMethod === "jwt-auth") {
-  req.dsAuth = req.dsAuthJwt;
-  // }
   next();
 });
 
@@ -81,28 +69,8 @@ passport.deserializeUser(function (obj, done) {
 });
 
 const SCOPES = ["signature"];
-const ROOM_SCOPES = [
-  "signature",
-  "dtr.rooms.read",
-  "dtr.rooms.write",
-  "dtr.documents.read",
-  "dtr.documents.write",
-  "dtr.profile.read",
-  "dtr.profile.write",
-  "dtr.company.read",
-  "dtr.company.write",
-  "room_forms",
-];
-const CLICK_SCOPES = ["signature", "click.manage", "click.send"];
 
-let scope;
-if (dsConfig.examplesApi.isRoomsApi) {
-  scope = ROOM_SCOPES;
-} else if (dsConfig.examplesApi.isClickApi) {
-  scope = CLICK_SCOPES;
-} else {
-  scope = SCOPES;
-}
+let scope = SCOPES;
 
 let hostUrl = "http://localhost:3000/";
 
