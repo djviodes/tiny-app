@@ -77,8 +77,9 @@ eg001EmbeddedSigning.createController = async (req, res) => {
     // Redirect the user to the embedded signing
     // Don't use an iFrame!
     // State can be stored/recovered using the framework's session or a
-    // query parameter on the returnUrl (see the makeRecipientViewRequest method)
-    res.redirect(results.redirectUrl);
+    // query parameter on the returnUrl (see the makeRecipientViewRequest method)'
+    // res.header('Access-Control-Allow-Origin', '*');
+    res.status(200).json(results.redirectUrl);
   }
 };
 

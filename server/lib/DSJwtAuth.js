@@ -84,6 +84,7 @@ DsJwtAuth.prototype.checkToken = function _checkToken(
  *
  * We need a new accessToken. We will use the DocuSign SDK's function.
  */
+// ********************************** This creates the JWT AND gets the access token ********************
 DsJwtAuth.prototype.getToken = async function _getToken() {
   // Data used
   // dsConfig.dsClientId

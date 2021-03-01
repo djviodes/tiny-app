@@ -1,7 +1,8 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import axios from "axios";
 import moment from "moment";
-
+import {useHistory, Route} from "react-router-dom";
+axios.defaults.headers.post['Access-Control-Allow-Origin'] = '*'
 let envelopeArgs = {
   accessToken: "",
   accountId: "d9ae37f1-949c-4649-87f1-bba5125c0159",
@@ -13,14 +14,32 @@ let envelopeArgs = {
 };
 
 function App() {
+  const [link, setLink] = useState("")
+  const history = useHistory()
+  useEffect(() => {
+    if (link) {
+      history.push("/redirect")
+    }
+  }, [link])
   function accessedBE() {
     console.log("This is our envelope arguments: ", envelopeArgs);
-    axios.post("http://localhost:8000/callDS", envelopeArgs);
+    axios.post("http://localhost:8000/callDS", envelopeArgs)
+    .then(res => {
+      console.log(res.data)
+      setLink(res.data)
+    })
   }
 
   return (
     <div className="App">
       <button onClick={accessedBE}>Call BE With Access Token</button>
+      <Route	
+        path="/redirect"	
+        component={() => {	
+          window.location.href = link;	
+          return null;	
+        }}	
+      />
     </div>
   );
 }
